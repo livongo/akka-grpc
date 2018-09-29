@@ -17,6 +17,8 @@ trait ScalaExtendedServerCodeGenerator extends ScalaCodeGenerator {
     val b = CodeGeneratorResponse.File.newBuilder()
     b.setContent(ExtendedApiTrait(service).body)
     b.setName(s"${service.packageDir}/${service.name}Extended.scala")
+    logger.info(s"Generating Akka gRPC file ${b.getName}")
+    //    logger.info(s"Generating Akka gRPC extended service interface ${service.packageName}.${service.name}Extended")
     b.build
   }
 
@@ -24,6 +26,10 @@ trait ScalaExtendedServerCodeGenerator extends ScalaCodeGenerator {
     val b = CodeGeneratorResponse.File.newBuilder()
     b.setContent(ExtendedHandler(service).body)
     b.setName(s"${service.packageDir}/${service.name}ExtendedHandler.scala")
+    logger.info(s"Generating Akka gRPC file ${b.getName}")
+    //    logger.info(s"Generating Akka gRPC extended server handler ${service.packageName}.${service.name}ExtendedHandler")
     b.build
   }
 }
+
+object ScalaExtendedServerCodeGenerator extends ScalaExtendedServerCodeGenerator

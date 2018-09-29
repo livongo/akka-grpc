@@ -4,13 +4,13 @@
 
 package akka.grpc.sbt
 
-import java.io.{ ByteArrayOutputStream, PrintStream }
+import java.io.{ByteArrayOutputStream, PrintStream}
 
-import sbt.{ GlobFilter, _ }
+import sbt.{GlobFilter, _}
 import Keys._
-import akka.grpc.gen.javadsl.{ JavaBothCodeGenerator, JavaClientCodeGenerator, JavaServerCodeGenerator }
-import akka.grpc.gen.scaladsl.{ ScalaBothCodeGenerator, ScalaClientCodeGenerator, ScalaMarshallersCodeGenerator, ScalaServerCodeGenerator }
-import akka.grpc.gen.{ Logger => GenLogger }
+import akka.grpc.gen.javadsl.{JavaBothCodeGenerator, JavaClientCodeGenerator, JavaServerCodeGenerator}
+import akka.grpc.gen.scaladsl.{ScalaExtendedServerCodeGenerator, _}
+import akka.grpc.gen.{Logger => GenLogger}
 import akka.grpc.gen.CodeGenerator.ScalaBinaryVersion
 import sbtprotoc.ProtocPlugin
 import scalapb.ScalaPbCodeGenerator
@@ -157,8 +157,8 @@ object AkkaGrpcPlugin extends AutoPlugin {
         }
       case Seq(AkkaGrpc.ExtendedServer) =>
         languages match {
-          case Seq(_, _) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger), JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
-          case Seq(AkkaGrpc.Scala) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger))
+          case Seq(_, _) => Seq(ScalaGenerator, toGenerator(ScalaExtendedServerCodeGenerator, scalaBinaryVersion, logger), JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
+          case Seq(AkkaGrpc.Scala) => Seq(ScalaGenerator, toGenerator(ScalaExtendedServerCodeGenerator, scalaBinaryVersion, logger))
           case Seq(AkkaGrpc.Java) => Seq(JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
         }
     }

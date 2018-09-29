@@ -17,6 +17,7 @@ trait ScalaServerCodeGenerator extends ScalaCodeGenerator {
     val b = CodeGeneratorResponse.File.newBuilder()
     b.setContent(Handler(service).body)
     b.setName(s"${service.packageDir}/${service.name}Handler.scala")
+    logger.info(s"Generating Akka gRPC server handler ${service.packageName}.${service.name}Handler")
     b.build
   }
 

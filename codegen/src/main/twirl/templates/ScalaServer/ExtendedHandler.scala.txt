@@ -29,7 +29,7 @@ import akka.stream.Materializer
      * Use `akka.grpc.scaladsl.ServiceHandler.concatOrNotFound` with `@{extendedServiceName}Handler.partial` when combining
      * several services.
      */
-    def apply(implementation: @service.name)(implicit mat: Materializer): HttpRequest => Future[HttpResponse] =
+    def apply(implementation: @extendedServiceName)(implicit mat: Materializer): HttpRequest => Future[HttpResponse] =
       partial(implementation).orElse { case _ => notFound }
 
     /**
@@ -41,7 +41,7 @@ import akka.stream.Materializer
      *
      * Registering a gRPC service under a custom prefix is not widely supported and strongly discouraged by the specification.
      */
-    def apply(implementation: @service.name, prefix: String)(implicit mat: Materializer): HttpRequest => Future[HttpResponse] =
+    def apply(implementation: @extendedServiceName, prefix: String)(implicit mat: Materializer): HttpRequest => Future[HttpResponse] =
       partial(implementation, prefix).orElse { case _ => notFound }
 
     /**
@@ -51,8 +51,8 @@ import akka.stream.Materializer
      *
      * Use `@{extendedServiceName}Handler.apply` if the server is only handling one service.
      */
-    def partial(implementation: @service.name)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] =
-      partial(implementation, @{extendedServiceName}.name)
+    def partial(implementation: @extendedServiceName)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] =
+      partial(implementation, @{service.name}.name)
 
     /**
      * Creates a partial `HttpRequest` to `HttpResponse` handler that can be combined with handlers of other
@@ -63,7 +63,7 @@ import akka.stream.Materializer
      *
      * Registering a gRPC service under a custom prefix is not widely supported and strongly discouraged by the specification.
      */
-    def partial(implementation: @service.name, prefix: String)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] = {
+    def partial(implementation: @extendedServiceName, prefix: String)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] = {
       implicit val ec: ExecutionContext = mat.executionContext
       import @{service.name}.Serializers._
 
