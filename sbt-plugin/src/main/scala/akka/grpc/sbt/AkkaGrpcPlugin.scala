@@ -38,6 +38,7 @@ object AkkaGrpcPlugin extends AutoPlugin {
       sealed trait GeneratedSource
       case object Client extends GeneratedSource
       case object Server extends GeneratedSource
+      case object ExtendedServer extends GeneratedSource
 
       sealed trait Language
       case object Scala extends Language
@@ -47,7 +48,9 @@ object AkkaGrpcPlugin extends AutoPlugin {
     val akkaGrpcGeneratedLanguages = settingKey[Seq[AkkaGrpc.Language]](
       "Which languages to generate service and model classes for (AkkaGrpc.Scala, AkkaGrpc.Java)")
     val akkaGrpcGeneratedSources = settingKey[Seq[AkkaGrpc.GeneratedSource]](
-      "Which of the sources to generate in addition to the gRPC protobuf messages (AkkaGrpc.Server, AkkaGrpc.Client)")
+      "Which of the sources to generate in addition to the gRPC protobuf messages (AkkaGrpc.Server or AkkaGrpc.ExtendedServer, AkkaGrpc.Client)")
+//    val akkaGrpcGeneratorOptions = settingKey[Seq[AkkaGrpc.GeneratorOptions]](
+//      "Code generation options (AkkaGrpc.ExtendedServerApis)")
     val akkaGrpcExtraGenerators = settingKey[Seq[akka.grpc.gen.CodeGenerator]]("Extra generators to evaluate. Empty by default")
     val akkaGrpcGenerators = settingKey[Seq[protocbridge.Generator]]("Generators to evaluate. Populated based on akkaGrpcGeneratedLanguages, akkaGrpcGeneratedSources and akkaGrpcExtraGenerators, but can be extended if needed")
     val akkaGrpcCodeGeneratorSettings = settingKey[Seq[String]]("Settings to pass to the code generators")
@@ -62,6 +65,7 @@ object AkkaGrpcPlugin extends AutoPlugin {
     Seq(
       akkaGrpcCodeGeneratorSettings := Seq("flat_package"),
       akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client, AkkaGrpc.Server),
+//      akkaGrpcGeneratorOptions := Seq.empty,
       akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
       akkaGrpcExtraGenerators := Seq.empty,
       PB.recompile in Compile := {
@@ -146,6 +150,12 @@ object AkkaGrpcPlugin extends AutoPlugin {
           case Seq(AkkaGrpc.Java) => Seq(JavaGenerator, toGenerator(JavaClientCodeGenerator, scalaBinaryVersion, logger))
         }
       case Seq(AkkaGrpc.Server) =>
+        languages match {
+          case Seq(_, _) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger), JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
+          case Seq(AkkaGrpc.Scala) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger))
+          case Seq(AkkaGrpc.Java) => Seq(JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
+        }
+      case Seq(AkkaGrpc.ExtendedServer) =>
         languages match {
           case Seq(_, _) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger), JavaGenerator, toGenerator(JavaServerCodeGenerator, scalaBinaryVersion, logger))
           case Seq(AkkaGrpc.Scala) => Seq(ScalaGenerator, toGenerator(ScalaServerCodeGenerator, scalaBinaryVersion, logger))
