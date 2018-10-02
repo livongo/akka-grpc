@@ -5,18 +5,25 @@
 package akka.grpc.gen.scaladsl.play
 
 import akka.grpc.gen.Logger
-import akka.grpc.gen.scaladsl.{ ScalaCodeGenerator, Service }
+import akka.grpc.gen.scaladsl.{ ScalaCodeGenerator, ScalaServerCodeGenerator, Service }
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse
 import templates.PlayScala.txt._
 
 //object PlayScalaServerCodeGenerator extends PlayScalaServerCodeGenerator
 
 case class PlayScalaServerCodeGenerator(powerApis: Boolean = false, usePlayActions: Boolean = false) extends ScalaCodeGenerator {
+
+  import ScalaServerCodeGenerator._
+
   override def name: String = "akka-grpc-play-server-scala"
 
   override def perServiceContent =
-    if (usePlayActions) super.perServiceContent + generateHandlerUsingActions + generateRouterUsingActions
-    else super.perServiceContent + generateRouter
+    super.perServiceContent ++ Set(ScalaCodeGenerator.generateServiceFile) ++ ((powerApis, usePlayActions) match {
+      case (true, true) => Set(generatePowerService, generateHandlerUsingActions, generateRouterUsingActions)
+      case (false, true) => Set(generateHandlerUsingActions, generateRouterUsingActions)
+      case (true, false) => Set(generatePowerService, generatePowerHandler, generateRouter)
+      case (false, false) => Set(generateHandler, generateRouter)
+    })
 
   private val generateRouter: (Logger, Service) => CodeGeneratorResponse.File = (logger, service) => {
     val b = CodeGeneratorResponse.File.newBuilder()
