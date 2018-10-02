@@ -26,7 +26,8 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc._
 
 import akka.NotUsed
-import akka.grpc.scaladsl.{GrpcMarshalling, Metadata}
+import akka.grpc.scaladsl
+import akka.grpc.scaladsl.{GrpcMarshalling, MetadataMap}
 import akka.grpc.{Codecs, Grpc, GrpcServiceException, ProtobufSerializer}
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model.Uri.Path
@@ -35,7 +36,6 @@ import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import io.grpc.{Status => GrpcStatus}
 import play.api.http.HttpChunk
 import play.api.http.HttpChunk.{Chunk, LastChunk}
 import play.api.http.HttpEntity.Chunked
@@ -97,19 +97,18 @@ import scala.util.{Failure, Success, Try}
       implicit val ec: ExecutionContext = mat.executionContext
       import @{service.name}.Serializers._
 
-      def handle(request: HttpRequest, method: String): EssentialAction = method match {
+      def handle(request: RequestHeader, method: String): EssentialAction = method match {
         @for(method <- service.methods) {
         case "@method.grpcName" =>
             Action.async(@{if(method.inputStreaming) { "streamBodyParser" } else { "parse.byteString" }}) { request =>
               val akkaReq = @{if(method.inputStreaming) { "playToAkkaRequestStream(request)" } else { "playToAkkaRequest(request)" }}
               GrpcMarshalling.@{if(method.inputStreaming) { "unmarshalStream" } else { "unmarshal" }}(akkaReq)(@method.deserializer.name, mat).flatMap { in =>
-                implementation
-                  .@{method.name}(in @{if(powerApis) { ", dummyMetadata" } else { "" }})
-                  .map(processGrpcResultStream(_, akkaReq)(@method.serializer.name, mat))
+                val res = implementation.@{method.name}(in @{if(powerApis) { ", MetadataMap(playToAkkaHeaders(request))" } else { "" }})
+                @if(method.outputStreaming) { Future.successful(processGrpcResultStream(res, akkaReq)(@method.serializer.name, mat)) } else { res.map(processGrpcResult(_, akkaReq)(@method.serializer.name, mat)) }
               }
             }
         }
-        case m => Future.failed(new NotImplementedError(s"Not implemented: $m"))
+        case m => throw new NotImplementedError(s"Not implemented: $method")
       }
 
       Function.unlift(
@@ -181,56 +180,42 @@ import scala.util.{Failure, Success, Try}
       )
     }
 
-    val dummyMetadata: Metadata = new Metadata {
-      override def getText(key:   String): Option[String]     = None
-      override def getBinary(key: String): Option[ByteString] = None
-    }
-
-    def processGrpcResult[T](r: GrpcResult[T], akkaReq: HttpRequest)(
+    def processGrpcResult[T](res: T, akkaReq: HttpRequest)(
         implicit ser: ProtobufSerializer[T],
         mat: Materializer
     ): Result = {
-      r match {
-        case GrpcResult.Success(res, metadata) =>
-          val responseCodec = Codecs.negotiate(akkaReq)
-          val akkaResp      = GrpcMarshalling.marshal(res /*, metadata */ )(ser, mat, responseCodec)
-          val playEntity = akkaResp.entity match {
-            case HttpEntity.Chunked(ct, chunks) =>
-              val playChunks: Source[HttpChunk, Any] = chunks.map {
-                case HttpEntity.LastChunk(_, trailer) =>
-                  LastChunk(akkaToPlayHeaders(trailer))
-                case HttpEntity.Chunk(data, ext) => Chunk(data)
-              }
-              Chunked(playChunks, None)
-            case _ => ???
+      val responseCodec = Codecs.negotiate(akkaReq)
+      val akkaResp      = GrpcMarshalling.marshal(res /*, metadata */ )(ser, mat, responseCodec)
+      val playEntity = akkaResp.entity match {
+        case HttpEntity.Chunked(ct, chunks) =>
+          val playChunks: Source[HttpChunk, Any] = chunks.map {
+            case HttpEntity.LastChunk(_, trailer) =>
+              LastChunk(akkaToPlayHeaders(trailer))
+            case HttpEntity.Chunk(data, ext) => Chunk(data)
           }
-          Result(akkaToPlayResponseHeaders(akkaResp), playEntity)
-        case GrpcResult.Error(status, metadata) => ???
-
+          Chunked(playChunks, None)
+        case _ => ???
       }
+      Result(akkaToPlayResponseHeaders(akkaResp), playEntity)
     }
 
-    def processGrpcResultStream[T](r: GrpcResult[Source[T, NotUsed]], akkaReq: HttpRequest)(
+    def processGrpcResultStream[T](res: Source[T, NotUsed], akkaReq: HttpRequest)(
         implicit ser: ProtobufSerializer[T],
         mat: Materializer
     ): Result = {
-      r match {
-        case GrpcResult.Success(res, metadata) =>
-          val responseCodec = Codecs.negotiate(akkaReq)
-          val akkaResp      = GrpcMarshalling.marshalStream[T](res /*, metadata */ )(ser, mat, responseCodec)
-          val playEntity = akkaResp.entity match {
-            case HttpEntity.Chunked(ct, chunks) =>
-              val playChunks: Source[HttpChunk, Any] = chunks.map {
-                case HttpEntity.LastChunk(_, trailer) =>
-                  LastChunk(akkaToPlayHeaders(trailer))
-                case HttpEntity.Chunk(data, ext) => Chunk(data)
-              }
-              Chunked(playChunks, None)
-            case _ => ???
+      val responseCodec = Codecs.negotiate(akkaReq)
+      val akkaResp      = GrpcMarshalling.marshalStream[T](res /*, metadata */ )(ser, mat, responseCodec)
+      val playEntity = akkaResp.entity match {
+        case HttpEntity.Chunked(ct, chunks) =>
+          val playChunks: Source[HttpChunk, Any] = chunks.map {
+            case HttpEntity.LastChunk(_, trailer) =>
+              LastChunk(akkaToPlayHeaders(trailer))
+            case HttpEntity.Chunk(data, ext) => Chunk(data)
           }
-          Result(akkaToPlayResponseHeaders(akkaResp), playEntity)
-        case GrpcResult.Error(status, metadata) => ???
-     }
+          Chunked(playChunks, None)
+        case _ => ???
+      }
+      Result(akkaToPlayResponseHeaders(akkaResp), playEntity)
     }
   }
 }

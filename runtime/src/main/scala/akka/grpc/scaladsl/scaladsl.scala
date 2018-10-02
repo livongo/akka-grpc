@@ -11,7 +11,7 @@ package object scaladsl {
   type MetadataMap = immutable.Map[String, Seq[MetadataEntry]]
 
   object MetadataMap {
-    def apply(headers: immutable.Seq[HttpHeader]): MetadataMap = {
+    def apply(headers: immutable.Seq[HttpHeader] = immutable.Seq.empty): MetadataMap = {
       // REVIEWER NOTE: modeled after akka.grpc.internal.MetadataImpl.metadataMapFromGoogleGrpcMetadata
       var entries = Map.empty[String, List[MetadataEntry]]
       headers.foreach { header =>
