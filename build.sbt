@@ -7,7 +7,7 @@ scalaVersion := scala212
 
 val commonSettings = Seq(
   organization := "com.lightbend.akka.grpc",
-  version := "0.4.1.livongo",
+  version := "0.4.1.1.livongo",
 
   scalacOptions ++= List(
     "-unchecked",
@@ -97,9 +97,10 @@ lazy val sbtPlugin = Project(
   .settings(Dependencies.sbtPlugin)
   .enablePlugins(SbtPlugin)
   .settings(
-    publishMavenStyle := false,
-    bintrayPackage := "sbt-akka-grpc",
-    bintrayRepository := "sbt-plugin-releases",
+    publishMavenStyle := true,
+//    publishMavenStyle := false,
+//    bintrayPackage := "sbt-akka-grpc",
+//    bintrayRepository := "sbt-plugin-releases",
 
     /** And for scripted tests: */
     scriptedLaunchOpts += ("-Dproject.version=" + version.value),
