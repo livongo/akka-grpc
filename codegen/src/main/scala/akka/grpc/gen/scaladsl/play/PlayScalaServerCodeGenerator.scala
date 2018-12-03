@@ -9,8 +9,6 @@ import akka.grpc.gen.scaladsl.{ ScalaCodeGenerator, ScalaServerCodeGenerator, Se
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse
 import templates.PlayScala.txt._
 
-//object PlayScalaServerCodeGenerator extends PlayScalaServerCodeGenerator
-
 case class PlayScalaServerCodeGenerator(powerApis: Boolean = false, usePlayActions: Boolean = false) extends ScalaCodeGenerator {
 
   import ScalaServerCodeGenerator._
