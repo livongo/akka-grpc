@@ -26,7 +26,7 @@ object GrpcExceptionHandler {
     case _: UnsupportedOperationException ⇒
       Future.successful(GrpcResponseHelpers.status(Status.UNIMPLEMENTED))
     case other ⇒
-      Future.failed(other)
+      Future.successful(GrpcResponseHelpers.status(Status.INTERNAL))
   }
 }
 

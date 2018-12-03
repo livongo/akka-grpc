@@ -16,8 +16,7 @@ import sbt.{GlobFilter, _}
 import sbtprotoc.ProtocPlugin
 import scalapb.ScalaPbCodeGenerator
 
-import scala.util.Try
-import language.implicitConversions
+import scala.language.implicitConversions
 
 object AkkaGrpcPlugin extends AutoPlugin {
   import sbtprotoc.ProtocPlugin.autoImport._
@@ -41,6 +40,7 @@ object AkkaGrpcPlugin extends AutoPlugin {
     implicit def valueToGeneratorOptionVal(x: Value): Val = x.asInstanceOf[Val]
 
     val ServerPowerApis = Val("server_power_apis")
+    val UsePlayActions = Val("use_play_actions")
 
     val settings: Set[String] = values.map(_.setting)
   }
@@ -155,6 +155,7 @@ object AkkaGrpcPlugin extends AutoPlugin {
     def JavaGenerator: protocbridge.Generator = PB.gens.java
 
     lazy val serverPowerApis = options.contains(GeneratorOption.ServerPowerApis.setting)
+    lazy val usePlayActions = options.contains(GeneratorOption.UsePlayActions.setting)
     lazy val baseGenerators: Seq[Generator] = Seq(ScalaGenerator, toGenerator(ScalaTraitCodeGenerator, scalaBinaryVersion, logger))
 
     val generators = (for {
@@ -165,7 +166,7 @@ object AkkaGrpcPlugin extends AutoPlugin {
       case (Client, Scala) => Seq(toGenerator(ScalaClientCodeGenerator, scalaBinaryVersion, logger))
       case (PlayClient, Scala) => Seq(toGenerator(PlayScalaClientCodeGenerator, scalaBinaryVersion, logger))
       case (Server, Scala) => Seq(toGenerator(ScalaServerCodeGenerator(serverPowerApis), scalaBinaryVersion, logger))
-      case (PlayServer, Scala) => Seq(toGenerator(PlayScalaServerCodeGenerator(serverPowerApis), scalaBinaryVersion, logger))
+      case (PlayServer, Scala) => Seq(toGenerator(PlayScalaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions), scalaBinaryVersion, logger))
     }).flatten.distinct
 
     if (generators.nonEmpty) baseGenerators ++ generators
