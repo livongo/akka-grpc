@@ -51,12 +51,13 @@ object GrpcResponseHelpers {
       .map(bytes ⇒ HttpEntity.Chunk(bytes))
       .concat(trail)
       .recover {
-        case e: GrpcServiceException =>
-          trailer(e.status)
-        case e: Exception =>
-          // TODO handle better
-          e.printStackTrace()
-          trailer(Status.UNKNOWN.withCause(e).withDescription("Stream failed"))
+        case t =>
+          val status = eHandler
+            .orElse[Throwable, Status] {
+              case e: GrpcServiceException => e.status
+              case e: Exception => Status.UNKNOWN.withCause(e).withDescription("Stream failed")
+            }(t)
+          trailer(status)
       }
 
     HttpResponse(
