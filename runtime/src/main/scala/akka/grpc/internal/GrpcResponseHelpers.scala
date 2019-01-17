@@ -6,7 +6,7 @@ package akka.grpc.internal
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.grpc.scaladsl.headers
+import akka.grpc.scaladsl.{ GrpcExceptionHandler, headers }
 import akka.grpc.{ Codec, Grpc, GrpcServiceException, ProtobufSerializer }
 import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.{ HttpEntity, HttpHeader, HttpResponse }
@@ -27,16 +27,24 @@ object GrpcResponseHelpers {
   def apply[T](e: Source[T, NotUsed])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
     GrpcResponseHelpers(e, Source.single(trailer(Status.OK)))
 
+  def apply[T](e: Source[T, NotUsed], eHandler: PartialFunction[Throwable, Status])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
+    GrpcResponseHelpers(e, Source.single(trailer(Status.OK)), eHandler)
+
   def apply[T](e: Source[T, NotUsed], status: Future[Status])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
+    GrpcResponseHelpers(e, status, GrpcExceptionHandler.defaultStatusMapper)
+  }
+
+  def apply[T](e: Source[T, NotUsed], status: Future[Status], eHandler: PartialFunction[Throwable, Status])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
     implicit val ec = mat.executionContext
     GrpcResponseHelpers(
       e,
       Source
         .lazilyAsync(() ⇒ status.map(trailer(_)))
-        .mapMaterializedValue(_ ⇒ NotUsed))
+        .mapMaterializedValue(_ ⇒ NotUsed),
+      eHandler)
   }
 
-  def apply[T](e: Source[T, NotUsed], trail: Source[HttpEntity.LastChunk, NotUsed])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
+  def apply[T](e: Source[T, NotUsed], trail: Source[HttpEntity.LastChunk, NotUsed], eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultStatusMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
     val outChunks = e
       .map(m.serialize)
       .via(Grpc.grpcFramingEncoder(codec))
