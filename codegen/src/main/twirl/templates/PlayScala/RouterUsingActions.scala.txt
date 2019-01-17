@@ -38,6 +38,7 @@ import play.api.mvc._
 import akka.NotUsed
 import akka.grpc.scaladsl
 import akka.grpc.scaladsl.GrpcMarshalling
+import akka.grpc.scaladsl.GrpcExceptionHandler.defaultStatusMapper
 import akka.grpc.{Codecs, Grpc, GrpcServiceException, ProtobufSerializer}
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model.Uri.Path
@@ -51,6 +52,7 @@ import play.api.http.HttpChunk.{Chunk, LastChunk}
 import play.api.http.HttpEntity.Chunked
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
+import io.grpc.Status
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
@@ -60,7 +62,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Abstract base class for implementing @{service.name} and using as a play Router
  */
-abstract class Abstract@{service.name}Router(mat: Materializer, cc: ControllerComponents) extends PlayRouterUsingActions(mat, @{service.name}.name, cc) with @{service.name}@{if(powerApis) { "PowerApi"} else { "" }} with InjectedController {
+abstract class Abstract@{service.name}Router(mat: Materializer, cc: ControllerComponents, eHandler: PartialFunction[Throwable, Status] = defaultStatusMapper) extends PlayRouterUsingActions(mat, @{service.name}.name, cc) with @{service.name}@{if(powerApis) { "PowerApi"} else { "" }} with InjectedController {
 
   @{
     val (streamingInputMethods: Seq[String], unaryInputMethods: Seq[String]) = service.methods.partition(_.inputStreaming) match {
@@ -72,7 +74,7 @@ abstract class Abstract@{service.name}Router(mat: Materializer, cc: ControllerCo
     //new @{service.name}Handler(cc).apply(this, serviceName)(mat)
   final override def createHandler(serviceName: String, mat: Materializer, cc: ControllerComponents): RequestHeader => EssentialAction = { reqOuter =>
     implicit val ec: ExecutionContext = mat.executionContext
-    val handler = @{service.name}Handler(this, serviceName)(mat)
+    val handler = @{service.name}Handler(this, serviceName, eHandler)(mat)
     Path(reqOuter.path) match {
       case Path.Slash(Segment(`serviceName`, Path.Slash(Segment(method, Path.Empty)))) =>
         if (streamingInputMethods.contains(method)) createStreamingAction(handler)
