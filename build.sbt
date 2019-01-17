@@ -7,7 +7,7 @@ scalaVersion := scala212
 
 val commonSettings = Seq(
   organization := "com.lightbend.akka.grpc",
-  version := "0.4.2.livongo",
+  version := "0.4.2.1.livongo",
 
   scalacOptions ++= List(
     "-unchecked",

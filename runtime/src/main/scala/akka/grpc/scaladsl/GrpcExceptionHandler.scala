@@ -11,22 +11,31 @@ import akka.grpc.internal.GrpcResponseHelpers
 import akka.http.scaladsl.model.HttpResponse
 
 object GrpcExceptionHandler {
-  val default: PartialFunction[Throwable, Future[HttpResponse]] = {
+  val defaultStatusMapper: PartialFunction[Throwable, Status] = {
+    case grpcException: GrpcServiceException ⇒ grpcException.status
+    case _: NotImplementedError ⇒ Status.UNIMPLEMENTED
+    case _: UnsupportedOperationException ⇒ Status.UNIMPLEMENTED
+    case other ⇒ Status.INTERNAL
+  }
+
+  val default: PartialFunction[Throwable, Future[HttpResponse]] = default(defaultStatusMapper)
+
+  def default(mapper: PartialFunction[Throwable, Status]): PartialFunction[Throwable, Future[HttpResponse]] = {
     case e: ExecutionException ⇒
       if (e.getCause == null) Future.failed(e)
-      else handling(e.getCause)
+      else handling(mapper)(e.getCause)
     case other ⇒
-      handling(other)
+      handling(mapper)(other)
   }
-  private val handling: PartialFunction[Throwable, Future[HttpResponse]] = {
-    case grpcException: GrpcServiceException ⇒
-      Future.successful(GrpcResponseHelpers.status(grpcException.status))
-    case _: NotImplementedError ⇒
-      Future.successful(GrpcResponseHelpers.status(Status.UNIMPLEMENTED))
-    case _: UnsupportedOperationException ⇒
-      Future.successful(GrpcResponseHelpers.status(Status.UNIMPLEMENTED))
-    case other ⇒
-      Future.successful(GrpcResponseHelpers.status(Status.INTERNAL))
+
+  private def handling(mapper: PartialFunction[Throwable, Status]): PartialFunction[Throwable, Future[HttpResponse]] = {
+    mapper
+      .orElse[Throwable, Status] {
+        case grpcException: GrpcServiceException ⇒ grpcException.status
+        case _: NotImplementedError ⇒ Status.UNIMPLEMENTED
+        case _: UnsupportedOperationException ⇒ Status.UNIMPLEMENTED
+        case other ⇒ Status.INTERNAL
+      }
+      .andThen(s => Future.successful(GrpcResponseHelpers.status(s)))
   }
 }
-
