@@ -75,7 +75,7 @@ object @{service.name}Handler {
    *
    * Registering a gRPC service under a custom prefix is not widely supported and strongly discouraged by the specification.
    */
-  def partial(implementation: @service.name, prefix: String = @{service.name}.name, eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultStatusMapper)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] = {
+  def partial(implementation: @service.name, prefix: String = @{service.name}.name, eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultMapper)(implicit mat: Materializer): PartialFunction[HttpRequest, Future[HttpResponse]] = {
     implicit val ec: ExecutionContext = mat.executionContext
     import @{service.name}.Serializers._
 

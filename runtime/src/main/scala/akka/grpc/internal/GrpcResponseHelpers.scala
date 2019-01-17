@@ -31,7 +31,7 @@ object GrpcResponseHelpers {
     GrpcResponseHelpers(e, Source.single(trailer(Status.OK)), eHandler)
 
   def apply[T](e: Source[T, NotUsed], status: Future[Status])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
-    GrpcResponseHelpers(e, status, GrpcExceptionHandler.defaultStatusMapper)
+    GrpcResponseHelpers(e, status, GrpcExceptionHandler.defaultMapper)
   }
 
   def apply[T](e: Source[T, NotUsed], status: Future[Status], eHandler: PartialFunction[Throwable, Status])(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
@@ -44,7 +44,7 @@ object GrpcResponseHelpers {
       eHandler)
   }
 
-  def apply[T](e: Source[T, NotUsed], trail: Source[HttpEntity.LastChunk, NotUsed], eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultStatusMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
+  def apply[T](e: Source[T, NotUsed], trail: Source[HttpEntity.LastChunk, NotUsed], eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse = {
     val outChunks = e
       .map(m.serialize)
       .via(Grpc.grpcFramingEncoder(codec))

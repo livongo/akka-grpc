@@ -11,14 +11,14 @@ import akka.grpc.internal.GrpcResponseHelpers
 import akka.http.scaladsl.model.HttpResponse
 
 object GrpcExceptionHandler {
-  val defaultStatusMapper: PartialFunction[Throwable, Status] = {
+  val defaultMapper: PartialFunction[Throwable, Status] = {
     case grpcException: GrpcServiceException ⇒ grpcException.status
     case _: NotImplementedError ⇒ Status.UNIMPLEMENTED
     case _: UnsupportedOperationException ⇒ Status.UNIMPLEMENTED
     case other ⇒ Status.INTERNAL
   }
 
-  val default: PartialFunction[Throwable, Future[HttpResponse]] = default(defaultStatusMapper)
+  val default: PartialFunction[Throwable, Future[HttpResponse]] = default(defaultMapper)
 
   def default(mapper: PartialFunction[Throwable, Status]): PartialFunction[Throwable, Future[HttpResponse]] = {
     case e: ExecutionException ⇒
