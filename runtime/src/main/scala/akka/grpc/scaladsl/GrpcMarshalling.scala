@@ -36,10 +36,10 @@ object GrpcMarshalling {
         .via(new CancellationBarrierGraphStage))
   }
 
-  def marshal[T](e: T = Identity, eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultStatusMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
+  def marshal[T](e: T = Identity, eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
     marshalStream(Source.single(e), eHandler)
 
-  def marshalStream[T](e: Source[T, NotUsed], eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultStatusMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
+  def marshalStream[T](e: Source[T, NotUsed], eHandler: PartialFunction[Throwable, Status] = GrpcExceptionHandler.defaultMapper)(implicit m: ProtobufSerializer[T], mat: Materializer, codec: Codec): HttpResponse =
     GrpcResponseHelpers(e, eHandler)
 
 }
