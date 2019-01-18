@@ -38,7 +38,7 @@ import play.api.mvc._
 import akka.NotUsed
 import akka.grpc.scaladsl
 import akka.grpc.scaladsl.GrpcMarshalling
-import akka.grpc.scaladsl.GrpcExceptionHandler.defaultStatusMapper
+import akka.grpc.scaladsl.GrpcExceptionHandler.defaultMapper
 import akka.grpc.{Codecs, Grpc, GrpcServiceException, ProtobufSerializer}
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model.Uri.Path
@@ -62,7 +62,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Abstract base class for implementing @{service.name} and using as a play Router
  */
-abstract class Abstract@{service.name}Router(mat: Materializer, cc: ControllerComponents, eHandler: PartialFunction[Throwable, Status] = defaultStatusMapper) extends PlayRouterUsingActions(mat, @{service.name}.name, cc) with @{service.name}@{if(powerApis) { "PowerApi"} else { "" }} with InjectedController {
+abstract class Abstract@{service.name}Router(mat: Materializer, cc: ControllerComponents, eHandler: PartialFunction[Throwable, Status] = defaultMapper) extends PlayRouterUsingActions(mat, @{service.name}.name, cc) with @{service.name}@{if(powerApis) { "PowerApi"} else { "" }} with InjectedController {
 
   @{
     val (streamingInputMethods: Seq[String], unaryInputMethods: Seq[String]) = service.methods.partition(_.inputStreaming) match {
