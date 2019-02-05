@@ -175,13 +175,13 @@ object AkkaGrpcPlugin extends AutoPlugin {
       case (Server, Scala) => (if (serverPowerApis) Seq(ScalaPowerApiTraitCodeGenerator) else Seq.empty) ++
           Seq(ScalaServerCodeGenerator(serverPowerApis))
       case (PlayServer, Scala) => (if (serverPowerApis) Seq(ScalaPowerApiTraitCodeGenerator) else Seq.empty) ++
-        Seq(ScalaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions), PlayScalaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions))
+        Seq(ScalaServerCodeGenerator(serverPowerApis), PlayScalaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions))
       case (Client, Java) => Seq(JavaClientCodeGenerator)
       case (PlayClient, Java) => Seq(JavaClientCodeGenerator, PlayJavaClientCodeGenerator)
       case (Server, Java) => (if (serverPowerApis) Seq(JavaPowerApiInterfaceCodeGenerator) else Seq.empty) ++
         Seq(JavaServerCodeGenerator(serverPowerApis))
       case (PlayServer, Java) => (if (serverPowerApis) Seq(JavaPowerApiInterfaceCodeGenerator) else Seq.empty) ++
-        Seq(JavaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions), PlayJavaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions))
+        Seq(JavaServerCodeGenerator(serverPowerApis), PlayJavaServerCodeGenerator(powerApis = serverPowerApis, usePlayActions = usePlayActions))
     }).flatten.distinct.map(toGen)
 
     if (generators.nonEmpty) baseGenerators ++ generators
