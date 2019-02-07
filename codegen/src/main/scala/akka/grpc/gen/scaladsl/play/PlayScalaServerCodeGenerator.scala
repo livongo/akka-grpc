@@ -32,7 +32,7 @@ case class PlayScalaServerCodeGenerator(powerApis: Boolean = false, usePlayActio
     val b = CodeGeneratorResponse.File.newBuilder()
     b.setContent(RouterUsingActions(service, powerApis).body)
     b.setName(s"${service.packageDir}/Abstract${service.name}${if (powerApis) "PowerApi" else ""}Router.scala")
-    logger.info(s"Generating Akka gRPC file ${b.getName}")
+    logger.info(s"Generating Akka gRPC service${if (powerApis) " power API" else ""} play router for ${service.packageName}.${service.name}")
     b.build
   }
 }
