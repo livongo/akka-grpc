@@ -28,7 +28,7 @@ import scala.concurrent.{ ExecutionContext, Future }
  * INTERNAL API
  */
 @InternalApi abstract class PlayRouterUsingActions(mat: Materializer, serviceName: String)
-  extends play.api.routing.Router with BaseController {
+  extends play.api.routing.Router with InjectedController {
 
   private val prefix = s"/$serviceName"
 
