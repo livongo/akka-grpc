@@ -23,7 +23,8 @@ group = "com.lightbend.akka.grpc"
 def tag = "git describe --tags".execute().text.substring(1).split("-g")[0].replace("\n", "")
 def finalVersion = (tag == versionDetails().lastTag.substring(1)) ? tag : tag.reverse().replaceFirst("-", "+").reverse() + "-" + versionDetails().gitHash.substring(0, 8)
 
-version = finalVersion
+//version = finalVersion
+version = "0.5.0.playActions"
 
 gradlePlugin {
     plugins {
