@@ -15,7 +15,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path.Segment
 import akka.stream.Materializer
 import io.grpc.Status
-import play.api.mvc.{EssentialAction, RequestHeader}
+import play.api.mvc.{EssentialAction, RequestHeader, PlayBodyParsers, DefaultActionBuilder}
 
 import scala.concurrent.ExecutionContext
 
@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext
   /**
    * Abstract base class for implementing @{serviceName} and using as a play Router
    */
-  abstract class Abstract@{serviceName}Router(mat: Materializer, system: ActorSystem, eHandler: ActorSystem => PartialFunction[Throwable, Status] = defaultMapper) extends PlayRouterUsingActions(mat, @{service.name}.name) with @{serviceName} {
+  abstract class Abstract@{serviceName}Router(mat: Materializer, system: ActorSystem, parsers: PlayBodyParsers, actionBuilder: DefaultActionBuilder, eHandler: ActorSystem => PartialFunction[Throwable, Status] = defaultMapper) extends PlayRouterUsingActions(mat, @{service.name}.name, parsers, actionBuilder) with @{serviceName} {
 
     @{
       val (streamingInputMethods: Seq[String], unaryInputMethods: Seq[String]) = service.methods.partition(_.inputStreaming) match {

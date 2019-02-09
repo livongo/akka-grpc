@@ -27,8 +27,8 @@ import scala.concurrent.{ ExecutionContext, Future }
  *
  * INTERNAL API
  */
-@InternalApi abstract class PlayRouterUsingActions(mat: Materializer, serviceName: String)
-  extends play.api.routing.Router with InjectedController {
+@InternalApi abstract class PlayRouterUsingActions(mat: Materializer, serviceName: String, parsers: PlayBodyParsers, actionBuilder: DefaultActionBuilder)
+  extends play.api.routing.Router {
 
   private val prefix = s"/$serviceName"
 
@@ -63,12 +63,12 @@ import scala.concurrent.{ ExecutionContext, Future }
           s"When binding gRPC routers the path in `routes` MUST BE `/`.")
 
   def createStreamingAction(handler: HttpRequest => Future[HttpResponse])(implicit ec: ExecutionContext): EssentialAction =
-    Action.async(streamBodyParser) { req =>
+    actionBuilder.async(streamBodyParser) { req =>
       handler(playToAkkaRequestStream(req)).map(akkaToPlayResp)
     }
 
   def createUnaryAction(handler: HttpRequest => Future[HttpResponse])(implicit ec: ExecutionContext): EssentialAction =
-    Action.async(parse.byteString) { req =>
+    actionBuilder.async(parsers.byteString) { req =>
       handler(playToAkkaRequest(req)).map(akkaToPlayResp)
     }
 

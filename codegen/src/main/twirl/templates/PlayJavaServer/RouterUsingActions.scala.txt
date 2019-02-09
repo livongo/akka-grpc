@@ -18,6 +18,9 @@ import akka.japi.Function;
 import akka.stream.Materializer;
 import play.api.mvc.EssentialAction;
 import play.api.mvc.RequestHeader;
+import play.api.mvc.PlayBodyParsers;
+import play.api.mvc.DefaultActionBuilder;
+
 import scala.Function1;
 import scala.NotImplementedError;
 
@@ -32,6 +35,8 @@ import java.util.concurrent.CompletionStage;
   public abstract class Abstract@{serviceName}Router extends PlayRouterUsingActions implements @{serviceName} {
     private final Function<ActorSystem, Function<Throwable, io.grpc.Status>> eHandler;
     private final ActorSystem system;
+    private final PlayBodyParsers parsers;
+    private final DefaultActionBuilder actionBuilder;
     @{
       val (streamingInputMethods: Seq[String], unaryInputMethods: Seq[String]) = service.methods.partition(_.inputStreaming) match {
         case (streaming, unary) => (streaming.map(_.grpcName), unary.map(_.grpcName))
@@ -42,14 +47,16 @@ import java.util.concurrent.CompletionStage;
       """
     }
 
-    public Abstract@{serviceName}Router(Materializer mat, ActorSystem system) {
-      this(mat, system, GrpcExceptionHandler.defaultMapper());
+    public Abstract@{serviceName}Router(Materializer mat, ActorSystem system, PlayBodyParsers parsers, DefaultActionBuilder actionBuilder) {
+      this(mat, system, parsers, actionBuilder, GrpcExceptionHandler.defaultMapper());
     }
 
-    public Abstract@{serviceName}Router(Materializer mat, ActorSystem system, Function<ActorSystem, Function<Throwable, io.grpc.Status>> eHandler) {
-      super(mat, @{service.name}.name);
+    public Abstract@{serviceName}Router(Materializer mat, ActorSystem system, PlayBodyParsers parsers, DefaultActionBuilder actionBuilder, Function<ActorSystem, Function<Throwable, io.grpc.Status>> eHandler) {
+      super(mat, @{service.name}.name, parsers, actionBuilder);
       this.eHandler = eHandler;
       this.system = system;
+      this.parsers = parsers;
+      this.actionBuilder = actionBuilder;
     }
 
     @@Override
@@ -58,8 +65,8 @@ import java.util.concurrent.CompletionStage;
         public EssentialAction apply(RequestHeader reqOuter) {
           Function<HttpRequest, CompletionStage<HttpResponse>> handler = @{serviceName}HandlerFactory.create(Abstract@{serviceName}Router.this, serviceName, mat, eHandler, system);
           String[] pathSegments = reqOuter.path().split("/");
-          if ((pathSegments.length == 2) && (pathSegments[0] == serviceName)) {
-            String method = pathSegments[1];
+          if ((pathSegments.length == 3) && (pathSegments[1].equals(serviceName))) {
+            String method = pathSegments[2];
             if (streamingInputMethods.contains(method)) return createStreamingAction(PlayRouterHelper$.MODULE$.handlerFor(handler), mat.executionContext());
             else if (unaryInputMethods.contains(method)) return createUnaryAction(PlayRouterHelper$.MODULE$.handlerFor(handler), mat.executionContext());
             else throw new NotImplementedError("Not implemented: " + method);
